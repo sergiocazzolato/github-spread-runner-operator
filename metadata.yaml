@@ -1,0 +1,39 @@
+name: github-spread-runner-operator
+
+summary: Charm that creates LXD containers and deploys GitHub Actions runners
+
+maintainer: Sergio Cazzolato <sergio.cazzolato@canonical.com>
+
+description: |
+  Creates a configurable number of LXD containers on the host and installs a
+  GitHub Actions runner into each. The charm uses the local `lxc` command to
+  launch containers and `lxc exec` to bootstrap the runner.
+
+series: noble
+
+requires: {}
+
+# charm v2 bundles read options from metadata.yaml 'options'
+options:
+  github_url:
+    type: string
+    description: "Full GitHub URL for the runner to register to (e.g. https://github.com/canonical/snapd)"
+    default: ""
+  registration_token:
+    type: string
+    description: "GitHub Actions registration token (short-lived). Provide via juju config."
+    default: ""
+    secret: true
+  runner_count:
+    type: int
+    description: "How many LXD containers / runners to create"
+    default: 6
+  runner_name_prefix:
+    type: string
+    description: "Prefix used for created container names"
+    default: "spread-agent"
+  runner_labels:
+    type: string
+    description: "Comma separated labels to register for each runner"
+    default: "spread-enabled"
+  
