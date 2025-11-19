@@ -8,9 +8,9 @@ from pathlib import Path
 from ops.charm import CharmBase
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus
+import os
 
 logger = logging.getLogger(__name__)
-
 
 class GitHubRunnerLXDCharm(CharmBase):
     def __init__(self, *args):
@@ -66,7 +66,8 @@ class GitHubRunnerLXDCharm(CharmBase):
         if not self._wait_for_network(name):
             raise RuntimeError(f"container {name} did not become responsive in time")
 
-    def _bootstrap_runner_in_container(self, name, github_url, token, runner_name, labels):
+    def _bootstrap_runner_in_container(self, name, github_url, token, runner_name, labels,
+                                       http_proxy=None, https_proxy=None, no_proxy=None):
         logger.info("Bootstrapping runner in %s", name)
         self.unit.status = MaintenanceStatus(f"bootstrapping runner in {name}")
 
@@ -99,6 +100,9 @@ class GitHubRunnerLXDCharm(CharmBase):
             (f"chmod +x {remote_path} && "
              f"GITHUB_URL=\"{github_url}\" GITHUB_TOKEN=\"{token}\" "
              f"RUNNER_NAME=\"{runner_name}\" RUNNER_LABELS=\"{labels}\" "
+             f"{'HTTP_PROXY=\"' + http_proxy + '\" ' if http_proxy else ''}"
+             f"{'HTTPS_PROXY=\"' + https_proxy + '\" ' if https_proxy else ''}"
+             f"{'NO_PROXY=\"' + no_proxy + '\" ' if no_proxy else ''}"
              f"{remote_path}")
         ]
         try:
@@ -115,8 +119,11 @@ class GitHubRunnerLXDCharm(CharmBase):
             count = int(cfg.get("runner_count") or 6)
         except Exception:
             count = 6
-        prefix = cfg.get("runner_name_prefix") or "gha-runner"
-        labels = cfg.get("runner_labels") or "juju,lxd"
+        prefix = cfg.get("runner_name_prefix") or "spread-agent"
+        labels = cfg.get("runner_labels") or "spread-enabled"
+        http_proxy = cfg.get("http_proxy")
+        https_proxy = cfg.get("https_proxy")
+        no_proxy = cfg.get("no_proxy")
 
         if not github_url or not token:
             self.unit.status = BlockedStatus("please set github_url and registration_token in charm config")
@@ -152,7 +159,7 @@ class GitHubRunnerLXDCharm(CharmBase):
 
             runner_name = f"{prefix}-{i}"
             try:
-                self._bootstrap_runner_in_container(cname, github_url, token, runner_name, labels)
+                self._bootstrap_runner_in_container(cname, github_url, token, runner_name, labels, http_proxy, https_proxy, no_proxy)
                 # mark success
                 mark_cmd = ["lxc", "exec", cname, "--", "bash", "-lc", f"mkdir -p /var/lib/github-runner && touch /var/lib/github-runner/{cname}.registered"]
                 self._run(mark_cmd)
@@ -162,6 +169,8 @@ class GitHubRunnerLXDCharm(CharmBase):
                 return
 
         self.unit.status = ActiveStatus(f"{count} GitHub runners ready as {prefix}-1..{prefix}-{count}")
+
+
 
 
 if __name__ == "__main__":
