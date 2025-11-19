@@ -36,15 +36,15 @@ options:
     type: string
     description: "Comma separated labels to register for each runner"
     default: "spread-enabled"
-  http_proxy:
+  runner_http_proxy:
     type: string
     description: "HTTP proxy URL to use for the runners"
     default: ""
-  https_proxy:
+  runner_https_proxy:
     type: string
     description: "HTTPS proxy URL to use for the runners"
     default: ""
-  no_proxy:
+  runner_no_proxy:
     type: string
     description: "Comma separated list of hosts that should be excluded from proxying"
     default: ""

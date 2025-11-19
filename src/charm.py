@@ -8,9 +8,9 @@ from pathlib import Path
 from ops.charm import CharmBase
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus
-import os
 
 logger = logging.getLogger(__name__)
+
 
 class GitHubRunnerLXDCharm(CharmBase):
     def __init__(self, *args):
@@ -121,16 +121,17 @@ class GitHubRunnerLXDCharm(CharmBase):
             count = 6
         prefix = cfg.get("runner_name_prefix") or "spread-agent"
         labels = cfg.get("runner_labels") or "spread-enabled"
-        http_proxy = cfg.get("http_proxy")
-        https_proxy = cfg.get("https_proxy")
-        no_proxy = cfg.get("no_proxy")
+        http_proxy = cfg.get("runner_http_proxy")
+        https_proxy = cfg.get("runner_https_proxy")
+        no_proxy = cfg.get("runner_no_proxy")
 
         if not github_url or not token:
             self.unit.status = BlockedStatus("please set github_url and registration_token in charm config")
             return
 
         if not self._lxc_available():
-            self.unit.status = BlockedStatus("lxc client not available on the unit; ensure LXD is installed and accessible")
+            self.unit.status = BlockedStatus("lxc client not available on the unit; "
+                                             "ensure LXD is installed and accessible")
             return
 
         # Create containers and bootstrap runners
@@ -159,9 +160,11 @@ class GitHubRunnerLXDCharm(CharmBase):
 
             runner_name = f"{prefix}-{i}"
             try:
-                self._bootstrap_runner_in_container(cname, github_url, token, runner_name, labels, http_proxy, https_proxy, no_proxy)
+                self._bootstrap_runner_in_container(cname, github_url, token, runner_name, labels,
+                                                    http_proxy, https_proxy, no_proxy)
                 # mark success
-                mark_cmd = ["lxc", "exec", cname, "--", "bash", "-lc", f"mkdir -p /var/lib/github-runner && touch /var/lib/github-runner/{cname}.registered"]
+                mark_cmd = ["lxc", "exec", cname, "--", "bash", "-lc", 
+                            f"mkdir -p /var/lib/github-runner && touch /var/lib/github-runner/{cname}.registered"]
                 self._run(mark_cmd)
             except Exception as e:
                 logger.error("Failed to bootstrap runner in %s: %s", cname, e)
@@ -169,8 +172,6 @@ class GitHubRunnerLXDCharm(CharmBase):
                 return
 
         self.unit.status = ActiveStatus(f"{count} GitHub runners ready as {prefix}-1..{prefix}-{count}")
-
-
 
 
 if __name__ == "__main__":
