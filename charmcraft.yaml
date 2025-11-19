@@ -1,0 +1,9 @@
+type: charm
+
+bases:
+  - name: ubuntu
+    channel: "22.04"
+
+parts:
+  charm:
+    plugin: charm
