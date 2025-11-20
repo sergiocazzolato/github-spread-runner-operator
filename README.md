@@ -9,7 +9,9 @@ This charm will create `runner_count` LXD containers on the machine where it is 
 
 ## Deploy
 ```
-juju deploy ./path/to/charm --series noble
-juju config github-spread-runner-operator github_url="https://github.com/owner/repo" registration_token="<token>" runner_count=6
+juju deploy ./path/to/charm <app-name> --config github_url="https://github.com/owner/repo" --config registration_token="<token>" --config runner_count=<number> --config runner_labels="<label1,label2>" --config runner_name_prefix=<prefix> --constraints "mem=8G cores=4 root-disk=50G"
 ```
+
+## Remove
+juju remove-application <app-name>
 

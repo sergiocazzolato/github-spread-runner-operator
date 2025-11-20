@@ -1,9 +1,19 @@
+name: github-spread-runner-operator
+
+summary: Charm that creates LXD containers and deploys GitHub Actions runners
+
+description: |
+  Creates a configurable number of LXD containers on the host and installs a
+  GitHub Actions runner into each. The charm uses the local `lxc` command to
+  launch containers and `lxc exec` to bootstrap the runner.
+
 type: charm
 
-bases:
-  - name: ubuntu
-    channel: "22.04"
+base: ubuntu@24.04
+platforms:
+  amd64:
 
 parts:
   charm:
+    source: .
     plugin: charm

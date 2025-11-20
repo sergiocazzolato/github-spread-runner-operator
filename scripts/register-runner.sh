@@ -18,6 +18,9 @@ HTTP_PROXY=${HTTP_PROXY:-}
 HTTPS_PROXY=${HTTPS_PROXY:-}
 NO_PROXY="${NO_PROXY:-"localhost,127.0.0.1"}"
 
+RUNNER_USER=ubuntu
+RUNNER_HOME="/home/$RUNNER_USER/actions-runner"
+
 set -x
 
 echo "Setting machine-wide proxy"
@@ -42,8 +45,13 @@ EOF
 
 echo "Updated /etc/environment"
 
-apt-get update
-apt-get install -y --no-install-recommends curl jq ca-certificates tar git
+sudo apt update
+sudo apt install -y --no-install-recommends curl jq ca-certificates tar git
+
+mkdir -p "$RUNNER_HOME"
+chown "${RUNNER_USER}:${RUNNER_USER}" "$RUNNER_HOME"
+cd "$RUNNER_HOME"
+
 
 # Download latest runner tarball (uses the GitHub releases redirect)
 ARCHIVE="$(curl --silent "https://api.github.com/repos/actions/runner/releases/latest" | jq -r '.assets[] | select(.name | contains("linux-x64")) | .name')"
@@ -52,12 +60,13 @@ curl -fsSL -o "$ARCHIVE" "$URL"
 
 # extract
 tar xzf "$ARCHIVE"
+chown -R "${RUNNER_USER}:${RUNNER_USER}" .
 
 # Register runner
 # The config script will create a runner registration and write _diag files.
-./config.sh --unattended --url \"$GITHUB_URL\" --token \"$GITHUB_TOKEN\" --name \"$RUNNER_NAME\" --labels \"$RUNNER_LABELS\" --replace
-./svc.sh install
-./svc.sh start
+su - "$RUNNER_USER" -c "$RUNNER_HOME/config.sh --unattended --url \"$GITHUB_URL\" --token \"$GITHUB_TOKEN\" --name \"$RUNNER_NAME\" --labels \"$RUNNER_LABELS\" --replace"
+sudo ./svc.sh install
+sudo ./svc.sh start
 
 echo "Runner $RUNNER_NAME registered"
 

@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """Operator Framework charm that creates LXD containers and installs GitHub runners."""
 import logging
 import subprocess
@@ -53,7 +55,7 @@ class GitHubRunnerLXDCharm(CharmBase):
                 time.sleep(2)
         return False
 
-    def _create_container(self, name, image="ubuntu:20.04"):
+    def _create_container(self, name, image="ubuntu:24.04"):
         logger.info("Creating LXD container: %s", name)
         self.unit.status = MaintenanceStatus(f"launching container {name}")
         try:
@@ -133,6 +135,14 @@ class GitHubRunnerLXDCharm(CharmBase):
             self.unit.status = BlockedStatus("lxc client not available on the unit; "
                                              "ensure LXD is installed and accessible")
             return
+
+        # Init lxd if needed
+        try:
+            # Launch with default profile, detach
+            self._run(["lxd", "init", "--auto"])
+        except Exception as e:
+            logger.error("Failed to init lxd: %s", e)
+            raise
 
         # Create containers and bootstrap runners
         for i in range(1, count + 1):
