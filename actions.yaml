@@ -1,0 +1,16 @@
+update-proxy:
+  description: "Update proxy configuration inside the runner LXD container"
+  params:
+    http_proxy:
+      type: string
+      description: "HTTP proxy"
+      default: ""
+    https_proxy:
+      type: string
+      description: "HTTPS proxy"
+      default: ""
+    no_proxy:
+      type: string
+      description: "NO_PROXY rules"
+      default: ""
+  required: []

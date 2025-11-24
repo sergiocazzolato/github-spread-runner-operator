@@ -2,6 +2,7 @@
 
 """Operator Framework charm that creates LXD containers and installs GitHub runners."""
 import logging
+import os
 import subprocess
 import shlex
 import time
@@ -15,6 +16,8 @@ logger = logging.getLogger(__name__)
 
 
 class GitHubRunnerLXDCharm(CharmBase):
+    """ Charm to manage GitHub runners in LXD containers. """
+
     def __init__(self, *args):
         super().__init__(*args)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
@@ -44,6 +47,16 @@ class GitHubRunnerLXDCharm(CharmBase):
         except Exception:
             return False
 
+    def _containers_list(self):
+        """Return a list of existing LXD container names."""
+        try:
+            result = self._run(["lxc", "list", "--format", "csv", "-c", "n"], capture_output=True)
+            containers = result.stdout.strip().splitlines()
+            return containers
+        except Exception as e:
+            logger.error("Failed to list LXD containers: %s", e)
+            return []
+
     def _wait_for_network(self, name, timeout=120):
         start = time.time()
         while time.time() - start < timeout:
@@ -68,24 +81,28 @@ class GitHubRunnerLXDCharm(CharmBase):
         if not self._wait_for_network(name):
             raise RuntimeError(f"container {name} did not become responsive in time")
 
+    def _get_local_script_path(self, script_name):
+        script_path = Path(__file__).parent.parent / "scripts" / script_name
+        if not script_path.exists():
+            raise FileNotFoundError(f"Script {script_name} not found in charm layer")
+        return script_path
+
+    def _push_file_to_container(self, name, local_path, remote_path):
+        logger.info("Pushing file to container %s: %s -> %s", name, local_path, remote_path)
+        self._run(["lxc", "file", "push", local_path, f"{name}{remote_path}"])
+
     def _bootstrap_runner_in_container(self, name, github_url, token, runner_name, labels,
                                        http_proxy=None, https_proxy=None, no_proxy=None):
         logger.info("Bootstrapping runner in %s", name)
         self.unit.status = MaintenanceStatus(f"bootstrapping runner in {name}")
 
         # Copy helper script into container
-        script_local = Path(__file__).parent.parent / "scripts/register-runner.sh"
-        if not script_local.exists():
-            raise FileNotFoundError("runner_service.sh not found in charm layer")
-
+        script_local = self._get_local_script_path("register-runner.sh")
         # push script content via lxc file push (create tmp script)
         remote_path = f"/tmp/runner_bootstrap_{runner_name}.sh"
+
         try:
-            # lxc file push requires a local file; write a temp file
-            tmp_local = Path(f"/tmp/{runner_name}_bootstrap.sh")
-            tmp_local.write_bytes(script_local.read_bytes())
-            self._run(["lxc", "file", "push", str(tmp_local), f"{name}{remote_path}"])
-            tmp_local.unlink()
+            self._push_file_to_container(name, str(script_local), remote_path)
         except Exception as e:
             # fallback: use lxc exec with a heredoc (less portable). For simplicity, rethrow.
             logger.error("Failed to push bootstrap script: %s", e)
@@ -113,8 +130,17 @@ class GitHubRunnerLXDCharm(CharmBase):
             logger.error("Bootstrap script failed inside %s: %s", name, e)
             raise
 
+    def _get_name(self):
+        # The unit name will be something like "my-app/0"
+        app_name = self.model.app.name
+        # The machine ID is the part after the slash
+        if app_name is None:
+            return None
+        return app_name
+
     def _on_config_changed(self, event):
         cfg = self.model.config
+        project_name = cfg.get("project_name")
         github_url = cfg.get("github_url")
         token = cfg.get("registration_token")
         try:
@@ -126,6 +152,7 @@ class GitHubRunnerLXDCharm(CharmBase):
         http_proxy = cfg.get("runner_http_proxy")
         https_proxy = cfg.get("runner_https_proxy")
         no_proxy = cfg.get("runner_no_proxy")
+        app_name = self._get_name() or "local"
 
         if not github_url or not token:
             self.unit.status = BlockedStatus("please set github_url and registration_token in charm config")
@@ -146,7 +173,7 @@ class GitHubRunnerLXDCharm(CharmBase):
 
         # Create containers and bootstrap runners
         for i in range(1, count + 1):
-            cname = f"{prefix}-{i}"
+            cname = f"{prefix}-{project_name}-{app_name}-{i}"
             if not self._container_exists(cname):
                 try:
                     self._create_container(cname)

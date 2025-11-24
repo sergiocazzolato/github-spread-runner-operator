@@ -1,5 +1,9 @@
 
 options:
+  project_name: 
+    type: string
+    description: "Name of the project to register the runner to (e.g. snapd)"
+    default: "snapd"
   github_url:
     type: string
     description: "Full GitHub URL for the runner to register to (e.g. https://github.com/canonical/snapd)"
