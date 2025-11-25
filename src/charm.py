@@ -2,7 +2,6 @@
 
 """Operator Framework charm that creates LXD containers and installs GitHub runners."""
 import logging
-import os
 import subprocess
 import shlex
 import time
