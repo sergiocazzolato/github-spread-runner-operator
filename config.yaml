@@ -15,7 +15,7 @@ options:
   runner_count:
     type: int
     description: "How many LXD containers / runners to create"
-    default: 6
+    default: 5
   runner_name_prefix:
     type: string
     description: "Prefix used for created container names"

@@ -143,9 +143,9 @@ class GitHubRunnerLXDCharm(CharmBase):
         github_url = cfg.get("github_url")
         token = cfg.get("registration_token")
         try:
-            count = int(cfg.get("runner_count") or 6)
+            count = int(cfg.get("runner_count") or 5)
         except Exception:
-            count = 6
+            count = 5
         prefix = cfg.get("runner_name_prefix") or "spread-agent"
         labels = cfg.get("runner_labels") or "spread-enabled"
         http_proxy = cfg.get("runner_http_proxy")
@@ -154,7 +154,7 @@ class GitHubRunnerLXDCharm(CharmBase):
         app_name = self._get_name() or "local"
 
         if not token:
-            self.unit.status = BlockedStatus("please set registration_token in charm config")
+            self.unit.status = BlockedStatus(f"please set registration_token for project {project_name}")
             return
 
         if not self._lxc_available():
