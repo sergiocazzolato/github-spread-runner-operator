@@ -131,7 +131,7 @@ class GitHubRunnerLXDCharm(CharmBase):
 
     def _get_name(self):
         # The unit name will be something like "my-app/0"
-        app_name = self.model.unit.name.replace("/", "-")
+        app_name = self.unit.name.replace("/", "-")
         # The machine ID is the part after the slash
         if app_name is None:
             return None

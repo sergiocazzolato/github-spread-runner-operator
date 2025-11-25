@@ -18,7 +18,7 @@ options:
     default: 5
   runner_name_prefix:
     type: string
-    description: "Prefix used for created container names"
+    description: "Prefix used for created container names, (e.g. the env name like ps8)"
     default: "spread-agent"
   runner_labels:
     type: string

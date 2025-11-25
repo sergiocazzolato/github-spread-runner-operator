@@ -2,10 +2,10 @@ update-proxy:
   description: "Update proxy configuration inside the runner LXD container"
   params:
     from_container:
-      type: int
+      type: integer
       description: "First container number (inclusive)"
     to_container:
-      type: int
+      type: integer
       description: "Last container number (inclusive)"
     http_proxy:
       type: string
@@ -25,9 +25,9 @@ install-grafana-agent:
   description: "Install Grafana Agent in the runner LXD container"
   params:
     from_container:
-      type: int
+      type: integer
       description: "First container number (inclusive)"
     to_container:
-      type: int
+      type: integer
       description: "Last container number (inclusive)"
   required: []
