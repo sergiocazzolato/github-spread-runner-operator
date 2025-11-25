@@ -132,7 +132,7 @@ class GitHubRunnerLXDCharm(CharmBase):
 
     def _get_name(self):
         # The unit name will be something like "my-app/0"
-        app_name = self.model.app.name
+        app_name = self.model.unit.name.replace("/", "-")
         # The machine ID is the part after the slash
         if app_name is None:
             return None
@@ -154,8 +154,8 @@ class GitHubRunnerLXDCharm(CharmBase):
         no_proxy = cfg.get("runner_no_proxy")
         app_name = self._get_name() or "local"
 
-        if not github_url or not token:
-            self.unit.status = BlockedStatus("please set github_url and registration_token in charm config")
+        if not token:
+            self.unit.status = BlockedStatus("please set registration_token in charm config")
             return
 
         if not self._lxc_available():
@@ -173,7 +173,7 @@ class GitHubRunnerLXDCharm(CharmBase):
 
         # Create containers and bootstrap runners
         for i in range(1, count + 1):
-            cname = f"{prefix}-{project_name}-{app_name}-{i}"
+            cname = f"{prefix}-{app_name}-{i}"
             if not self._container_exists(cname):
                 try:
                     self._create_container(cname)
