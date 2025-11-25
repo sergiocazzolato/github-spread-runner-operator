@@ -1,9 +1,8 @@
-Testing the github-spread-runner-operator Charm
-===============================================
-
-# Testing locally
+# Testing the github-spread-runner-operator Charm
 
 ## Requirements
+
+This need to be executed in the host machine:
 
 ```
 sudo snap install juju --classic
@@ -80,7 +79,7 @@ juju run-action <unit-name> update-proxy \
 
 # Cleaning Up
 
-In case the unit is in error status, before deleating it run:
+In case the unit is in error status, before deleting it run:
 
 `juju resolved --no-retry <unit-name>`
 
